@@ -1,0 +1,8 @@
+ID  Name            Department   Salary  Location
+101 Alice Smith     Engineering  85000   NewYork
+102 Bob Jones       Marketing    62000   London
+103 Charlie Brown   Engineering  92000   NewYork
+104 Diana Prince    HR           58000   Chicago
+105 Evan Wright     Sales        75000   London
+106 Fiona Gallagher Engineering  88000   Chicago
+107 George Clark    Marketing    64000   NewYork

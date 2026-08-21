@@ -1,0 +1,9 @@
+Date,Region,Category,Units,UnitPrice,TotalSales
+2026-08-01,North,Electronics,12,250.00,3000.00
+2026-08-01,South,Furniture,5,120.50,602.50
+2026-08-02,East,Electronics,8,400.00,3200.00
+2026-08-02,North,Clothing,45,15.00,675.00
+2026-08-03,West,Electronics,15,300.00,4500.00
+2026-08-03,South,Clothing,30,20.00,600.00
+2026-08-04,East,Furniture,2,850.00,1700.00
+2026-08-04,West,Furniture,8,110.00,880.00

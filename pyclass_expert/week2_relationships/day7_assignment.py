@@ -91,3 +91,8 @@ class Bottom(Left, Right):
     def message(self):
         # TODO: Return Bottom-mangled string
         pass
+
+# obj1 = Bottom()
+# print(obj1.message())
+# prints `Bottom -> Left -> Right -> Top`
+# because super() does NOT simply mean "go to my parent class." It means: Go to the next class in the MRO. Bottom.mro is [__main__.Bottom, __main__.Left, __main__.Right, __main__.Top, object]

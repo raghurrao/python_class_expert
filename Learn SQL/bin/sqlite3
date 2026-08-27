@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+python3 "/home/raghurao/Learnings/Learn SQL/bin/sqlite3_cli.py" "$@"

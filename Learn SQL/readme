@@ -1,1 +1,189 @@
+# 30-Day SQL & Data Engineering Learning Plan (Linux Edition)
+
+This plan outlines a comprehensive, step-by-step masterclass to take you from Linux terminal basics to advanced SQL, database automation, and Data Engineering pipelines. 
+
+## Curriculum Architecture & Progression
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Module 1: Linux Terminal Foundations (Days 1 - 5)      │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Module 2: SQLite & Relational Core (Days 6 - 11)        │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Module 3: PostgreSQL & Advanced SQL (Days 12 - 18)      │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Module 4: Bash + SQL Automation (Days 19 - 22)          │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Module 5: Python + SQL Integration (Days 23 - 26)       │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│ Module 6: SQL + Data Engineering Capstone (Days 27 - 30)│
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Detailed 30-Day Syllabus Breakdown
+
+### Module 1: Linux Terminal Foundations for Data & SQL (Days 1 – 5)
+* **Day 1: Shell Navigation & Directory Setup**
+  * Environment setup in `/home/raghurao/Learnings/Learn SQL`.
+  * Absolute vs. relative paths, permissions (`chmod`, `chown`), environment variables (`export`, `PATH`).
+* **Day 2: I/O Redirection & Pipes**
+  * Standard streams (`stdin`, `stdout`, `stderr`), redirection (`>`, `>>`, `2>`).
+  * Piping (`|`), inspecting files (`cat`, `head`, `tail`, `less`).
+* **Day 3: Text Data Parsing on the CLI**
+  * Filtering and trimming text data: `grep`, `cut`, `sort`, `uniq`, `wc`.
+  * Parsing CSVs and log files directly from command line.
+* **Day 4: Stream Processing with `awk` and `sed`**
+  * Pattern matching, field selection, and aggregations using `awk`.
+  * Inline text transformation and search/replace with `sed`.
+* **Day 5: Shell Scripting Basics for Data Ops**
+  * Creating execution scripts, handling parameters (`$1`, `$2`), exit statuses (`$?`), control loops, logging.
+
+---
+
+### Module 2: SQLite & Relational Core (Days 6 – 11)
+* **Day 6: SQLite CLI & DDL (Data Definition Language)**
+  * Installing SQLite CLI, creating database files (`.db`), table schemas, data types, `PRIMARY KEY`, `FOREIGN KEY`.
+* **Day 7: DML (Data Manipulation Language) & Bulk Import**
+  * `INSERT`, `UPDATE`, `DELETE`, `UPSERT` (`ON CONFLICT`), loading CSVs into SQLite (`.import`, `.mode csv`).
+* **Day 8: Querying & Filtering Fundamentals (DQL)**
+  * `SELECT`, `WHERE`, `LIKE`, `ILIKE`, `IN`, `BETWEEN`, `ORDER BY`, `LIMIT`/`OFFSET`, handling `NULL` with `COALESCE`.
+* **Day 9: Grouping & Aggregations**
+  * `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, multi-column `GROUP BY`, filtering groups with `HAVING`.
+* **Day 10: Relational Joins Masterclass**
+  * `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN` concept, `FULL OUTER JOIN`, `CROSS JOIN`, `SELF JOIN`, aliasing tables.
+* **Day 11: Subqueries & Set Operations**
+  * Scalar vs multi-row subqueries, correlated subqueries, `EXISTS`, `UNION`, `UNION ALL`, `INTERSECT`, `EXCEPT`.
+
+---
+
+### Module 3: PostgreSQL & Advanced SQL Features (Days 12 – 18)
+* **Day 12: PostgreSQL Setup & `psql` Shell**
+  * Installing & running PostgreSQL daemon on Linux, connecting via `psql`, databases, schemas, users/roles.
+* **Day 13: Postgres Advanced Data Types**
+  * Date/Time arithmetic (`TIMESTAMP`, `INTERVAL`), `JSONB` querying & indexing, `ARRAY`, `UUID`, custom Enums.
+* **Day 14: Analytical SQL: Window Functions (Part 1)**
+  * `OVER (PARTITION BY ... ORDER BY ...)`, `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`, `NTILE()`.
+* **Day 15: Analytical SQL: Window Functions (Part 2)**
+  * `LAG()`, `LEAD()`, `FIRST_VALUE()`, `LAST_VALUE()`, framing clauses (`ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`).
+* **Day 16: Common Table Expressions (CTEs) & Recursive SQL**
+  * Readability with `WITH` clauses, hierarchical data modeling, recursive graph traversal using `WITH RECURSIVE`.
+* **Day 17: Transactions, Concurrency & ACID Principles**
+  * Atomicity & Isolation: `BEGIN`, `COMMIT`, `ROLLBACK`, transaction isolation levels, row locks, `SAVEPOINT`.
+* **Day 18: Query Optimization & Indexing Strategies**
+  * Index types (B-Tree, GIN, Partial), analyzing query plans with `EXPLAIN` and `EXPLAIN ANALYZE`, index selectivity.
+
+---
+
+### Module 4: Bash + SQL Automation (Days 19 – 22)
+* **Day 19: Batch Automation with SQLite & Bash**
+  * Executing non-interactive SQLite scripts, dynamically passing CLI arguments, auto-formatting outputs to CSV/JSON.
+* **Day 20: Automated Data Workflows with PostgreSQL & Bash**
+  * `psql -c`, heredocs (`<<EOF`), connection env vars (`PGHOST`, `PGUSER`, `PGDATABASE`), script error handling (`set -e`).
+* **Day 21: Automated Database Backups & Restores**
+  * Shell scripts for automated daily backups (`pg_dump`, `sqlite3 .dump`), compression (`gzip`), backup rotation logic.
+* **Day 22: Command Line Data Ingestion Pipelines**
+  * Fetching web API data (`curl`), formatting JSON (`jq`), loading into PostgreSQL/SQLite via CLI pipes.
+
+---
+
+### Module 5: Python + SQL Integration (Days 23 – 26)
+* **Day 23: Python SQLite Integration (`sqlite3`)**
+  * Connecting to SQLite in Python, parameterized queries (protecting against SQL injection), transaction management.
+* **Day 24: Python PostgreSQL & DataFrames (`psycopg2` / `SQLAlchemy` / `pandas`)**
+  * Database adapters, connection pooling, reading/writing SQL tables with Pandas/Polars DataFrames.
+* **Day 25: High-Performance Database Operations & ORM Patterns**
+  * Batch insertions (`executemany`, `copy_expert`), raw performance vs SQLAlchemy ORM/Core.
+* **Day 26: Building Modular Database Services in Python**
+  * Designing a clean Python DB access layer, logging, config management, migration runner scripts.
+
+---
+
+### Module 6: SQL + Data Engineering Capstone (Days 27 – 30)
+* **Day 27: Data Warehousing & Dimensional Modeling**
+  * OLTP vs OLAP, Star Schema vs Snowflake Schema, Fact Tables vs Dimension Tables, Slowly Changing Dimensions (SCD).
+* **Day 28: Architecture of an End-to-End Data Pipeline**
+  * Data Architecture: Ingestion -> Staging (Raw) -> Transformation (Data Warehouse) -> Data Quality Checks.
+* **Day 29: Building the ETL/ELT Pipeline Script**
+  * Implementing automated extraction (APIs/CSVs), transformation (SQL Window functions/DB logic), loading into Star Schema.
+* **Day 30: Capstone Project Execution, Verification & Documentation**
+  * Final pipeline run, automated data quality verification scripts, query performance benchmark report, documentation.
+
+---
+
+## User Review Required
+
+> [!NOTE]
+> All exercises, scripts, databases, and sample datasets will be created directly in `/home/raghurao/Learnings/Learn SQL`.
+
+> [!IMPORTANT]
+> **Prerequisites & Package Setup**:
+> We will need `sqlite3`, `postgresql`, `python3-pip`, and `python3-venv` installed on Linux to execute PostgreSQL and Python DB scripts.
+
+---
+
+## Proposed System Setup & Directory Structure
+
+```
+/home/raghurao/Learnings/Learn SQL/
+├── 01_linux_basics/
+│   ├── day1_env.sh
+│   ├── day2_pipes.sh
+│   ├── day3_grep_cut.sh
+│   ├── day4_awk_sed.sh
+│   └── day5_scripting.sh
+├── 02_sqlite/
+│   ├── sample_store.db
+│   ├── schema.sql
+│   ├── data_import.sql
+│   └── queries/
+├── 03_postgres/
+│   ├── setup_postgres.sh
+│   ├── schema_and_types.sql
+│   └── window_functions.sql
+├── 04_bash_sql/
+│   ├── backup_script.sh
+│   └── ingest_pipeline.sh
+├── 05_python_sql/
+│   ├── venv/
+│   ├── db_client.py
+│   └── data_pipeline.py
+└── 06_data_engineering_capstone/
+    ├── src/
+    ├── sql/
+    └── README.md
+```
+
+---
+
+## Verification Plan
+
+### Automated Tests & Interactive Verification
+- **Module 1**: Executing shell scripts and verifying text output formatting, line counts, and transformations.
+- **Module 2**: Running `sqlite3` query scripts and asserting correct dataset output and row counts.
+- **Module 3**: Verifying PostgreSQL service startup, schema creation, window function outputs, and `EXPLAIN ANALYZE` reports.
+- **Module 4**: Executing Bash automation scripts and checking target database states and generated backup files.
+- **Module 5**: Running Python pytest/assertion scripts to test DB connectors, parameterized insertions, and Pandas roundtrips.
+- **Module 6**: End-to-end execution of the Data Engineering Capstone pipeline with data quality assertions.
+
+---
+
+## Next Steps
+Upon your approval of this plan, we will immediately begin **Day 1: Shell Navigation, Directory Setup & Environment Basics**!
 

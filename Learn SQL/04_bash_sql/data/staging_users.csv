@@ -1,0 +1,4 @@
+id,username,email,role
+501,alice_ingest,alice_ingest@data.com,Engineer
+502,bob_ingest,bob_ingest@data.com,Architect
+503,charlie_ingest,charlie_ingest@data.com,Analyst

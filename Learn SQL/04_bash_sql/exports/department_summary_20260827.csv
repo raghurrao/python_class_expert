@@ -1,0 +1,6 @@
+dept_name    | total_staff | total_payroll
+------------------------------------------
+Data Science | 2           | 194700.0     
+Engineering  | 3           | 303000.0     
+Marketing    | 0           | 0            
+Sales        | 1           | 65000.0      

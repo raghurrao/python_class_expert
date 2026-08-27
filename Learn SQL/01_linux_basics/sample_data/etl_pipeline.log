@@ -1,0 +1,6 @@
+[2026-08-27 12:24:10] [INFO] Pipeline Execution Started.
+[2026-08-27 12:24:10] [INFO] Created temp workspace file: /home/raghurao/Learnings/Learn SQL/01_linux_basics/sample_data/temp_data_KpncRL.tmp
+[2026-08-27 12:24:10] [INFO] Step 1: Simulating data extraction...
+[2026-08-27 12:24:10] [INFO] Step 2: Processing completed. Active users found: 3
+[2026-08-27 12:24:10] [INFO] Pipeline Execution Completed Successfully.
+[2026-08-27 12:24:10] [INFO] Executing exit trap: Removing temporary file '/home/raghurao/Learnings/Learn SQL/01_linux_basics/sample_data/temp_data_KpncRL.tmp'

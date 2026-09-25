@@ -1,0 +1,211 @@
+import json
+
+notebook = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Day 16 \u2014 Learning Rate & Training Optimization\n",
+                "\n",
+                "## 1. Learning Objectives\n",
+                "- Understand why a static Learning Rate is often sub-optimal.\n",
+                "- Implement **StepLR** to drop the learning rate on a schedule.\n",
+                "- Implement **ReduceLROnPlateau** to drop the rate when validation loss stalls.\n",
+                "- Understand modern concepts like **Warmup** and **OneCycleLR**."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 2. Prerequisites\n",
+                "- Optimizers (Day 11).\n",
+                "- Training Loops (Day 12)."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch\n",
+                "import torch.nn as nn\n",
+                "import torch.optim as optim\n",
+                "import torch.optim.lr_scheduler as lr_scheduler"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 3. Concept Explanation\n",
+                "The Learning Rate (`lr`) is the most important hyperparameter you will tune. \n",
+                "- If `lr` is too high, the model overshoots the minimum and the loss explodes.\n",
+                "- If `lr` is too low, the model takes tiny steps and takes forever to train.\n",
+                "\n",
+                "**Learning Rate Schedulers** solve this by dynamically changing the learning rate *during* training. Usually, we start with a large learning rate to learn fast, and then gradually decay it to take smaller, more precise steps as we approach the minimum."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 4. PyTorch `lr_scheduler` API\n",
+                "Schedulers wrap around your optimizer. After you call `optimizer.step()`, you call `scheduler.step()`."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Setup a dummy model and optimizer\n",
+                "model = nn.Linear(10, 1)\n",
+                "optimizer = optim.Adam(model.parameters(), lr=0.1)\n",
+                "\n",
+                "# 1. StepLR: Multiplies lr by gamma every step_size epochs.\n",
+                "# E.g., Every 10 epochs, multiply lr by 0.1\n",
+                "step_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Let's simulate 30 epochs of training and watch the learning rate change\n",
+                "lrs = []\n",
+                "for epoch in range(30):\n",
+                "    # ... forward, backward, optimizer.step() happen here ...\n",
+                "    optimizer.step() \n",
+                "    \n",
+                "    # At the end of the epoch, step the scheduler\n",
+                "    step_scheduler.step()\n",
+                "    \n",
+                "    # Record the current LR (it's stored in optimizer.param_groups)\n",
+                "    current_lr = optimizer.param_groups[0]['lr']\n",
+                "    lrs.append(current_lr)\n",
+                "    \n",
+                "    if epoch % 5 == 0:\n",
+                "        print(f\"Epoch {epoch}, LR: {current_lr}\")"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 5. ReduceLROnPlateau\n",
+                "Instead of guessing when to drop the learning rate, `ReduceLROnPlateau` watches your Validation Loss. If the loss stops improving for a certain number of epochs (the `patience`), it automatically drops the learning rate.\n",
+                "\n",
+                "*Note: Because it needs to see the loss, you must pass the validation loss into `scheduler.step(val_loss)`.*"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "optimizer = optim.Adam(model.parameters(), lr=0.1)\n",
+                "plateau_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)\n",
+                "\n",
+                "# In a real loop:\n",
+                "# ... get val_loss ...\n",
+                "# plateau_scheduler.step(val_loss)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 6. Advanced Concepts: Warmup & OneCycleLR\n",
+                "Modern architectures (like Transformers) are very unstable at the beginning of training. \n",
+                "- **Warmup**: Start the learning rate at nearly 0, and linearly increase it to the target LR over the first few epochs. This stabilizes the early gradients.\n",
+                "- **OneCycleLR**: Increases the LR to a maximum, then anneals it down to near zero. It's heavily used in fast.ai and modern computer vision/NLP.\n",
+                "\n",
+                "*Note: `OneCycleLR` steps every **batch**, not every epoch!*"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 11. Practice Exercise 1: Incorporating StepLR\n",
+                "Write out the 5 core training loop steps + the validation block. \n",
+                "Where exactly should `scheduler.step()` be placed if you are using `StepLR`?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# SOLUTION / PSEUDOCODE\n",
+                "# for epoch in range(epochs):\n",
+                "#     # --- Training ---\n",
+                "#     for batch in train_loader:\n",
+                "#         pred = model(x)\n",
+                "#         loss = criterion(pred, y)\n",
+                "#         optimizer.zero_grad()\n",
+                "#         loss.backward()\n",
+                "#         optimizer.step()\n",
+                "#\n",
+                "#     # --- Validation ---\n",
+                "#     # ... calculate val loss ...\n",
+                "#\n",
+                "#     # --- Scheduler Step ---\n",
+                "#     scheduler.step() # Placed at the very end of the epoch!"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 13. Debugging Challenge\n",
+                "A developer is using `ReduceLROnPlateau`, but PyTorch throws a `TypeError: step() missing 1 required positional argument: 'metrics'`. Why?"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Solution:** Unlike `StepLR` which just steps based on the epoch count, `ReduceLROnPlateau` needs to know if the model is plateauing! You must pass the validation loss to it: `scheduler.step(val_loss)`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 17. Interview Questions\n",
+                "1. **Why do we decay the learning rate instead of keeping it constant?**\n",
+                "   *Answer*: A high learning rate allows the model to traverse the loss landscape quickly and escape local minima initially. However, as it gets close to the global minimum, a high learning rate will cause it to \"bounce around\" and never settle into the lowest point. Decaying the learning rate allows for fine-tuning.\n",
+                "2. **Why do Transformers typically require a learning rate Warmup?**\n",
+                "   *Answer*: At initialization, the network weights are completely random, causing extreme gradient variances. A large initial learning rate can cause the weights to explode or collapse before they learn anything useful. Warmup gently scales the weights into a stable region."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 19. Day Summary\n",
+                "- Schedulers adjust `lr` dynamically.\n",
+                "- `StepLR`: Drops LR by a factor at fixed epoch intervals.\n",
+                "- `ReduceLROnPlateau`: Drops LR when the validation loss stalls (Requires `scheduler.step(val_loss)`).\n",
+                "- `OneCycleLR`: Steps every *batch* rather than every epoch, ramping up then down."
+            ]
+        }
+    ],
+    "metadata": {},
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open("Day_16_Learning_Rate_Optimization.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=2)
+
+print("Created Day_16_Learning_Rate_Optimization.ipynb")

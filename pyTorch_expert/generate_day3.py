@@ -1,0 +1,206 @@
+import json
+
+notebook = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Day 3 \u2014 Tensor Operations\n",
+                "\n",
+                "## 1. Learning Objectives\n",
+                "- Perform basic tensor arithmetic.\n",
+                "- Understand and execute matrix multiplications vs. dot products vs. element-wise multiplications.\n",
+                "- Use reduction operations like `sum`, `mean`, `max`, and `argmax`.\n",
+                "- Grasp the incredibly important concept of **Broadcasting**."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 2. Prerequisites\n",
+                "- Completion of Day 2 (Tensor Shapes, Dimensions, Reshaping)."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 3. Concept Explanation\n",
+                "Machine Learning involves applying mathematical operations to huge matrices of data. PyTorch provides hundreds of operations to manipulate these tensors.\n",
+                "\n",
+                "**Broadcasting** is a set of rules PyTorch uses to perform operations on tensors of different sizes. If one tensor is `[3, 3]` and you add a scalar `1` to it, PyTorch *broadcasts* the `1` across all 9 elements without explicitly duplicating it in memory."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 4. Why This Matters\n",
+                "Neural networks are simply a long sequence of tensor multiplications and additions, followed by activation functions. If you don't understand how `torch.matmul` differs from the `*` operator, you cannot build a neural network."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 5. Intuition\n",
+                "**Element-wise (`*`)**: Multiply each element in tensor A with the corresponding element in tensor B at the exact same position.\n",
+                "**Matrix Multiplication (`@` or `torch.matmul`)**: Multiply rows by columns (Standard linear algebra multiplication)."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# 8. Simple Example: Arithmetic & Matrix Multiplication\n",
+                "tensor_A = torch.tensor([[1, 2], [3, 4]])\n",
+                "tensor_B = torch.tensor([[1, 1], [1, 1]])\n",
+                "\n",
+                "print(\"Addition:\\n\", tensor_A + tensor_B)\n",
+                "print(\"\\nElement-wise Mult:\\n\", tensor_A * tensor_B)\n",
+                "print(\"\\nMatrix Mult:\\n\", tensor_A @ tensor_B) # Equivalent to torch.matmul(tensor_A, tensor_B)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 9. Code Walkthrough: Reductions\n",
+                "Reduction operations reduce the number of dimensions in a tensor by computing aggregates."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "x = torch.tensor([[1., 2., 3.], [4., 5., 6.]])\n",
+                "print(\"Original:\\n\", x)\n",
+                "\n",
+                "print(\"\\nSum all:\", x.sum())\n",
+                "print(\"Sum over columns (dim=0):\", x.sum(dim=0)) # Sum vertically\n",
+                "print(\"Sum over rows (dim=1):\", x.sum(dim=1))    # Sum horizontally\n",
+                "\n",
+                "print(\"\\nArgmax (index of max value):\", x.argmax())"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 10. Experiment: Broadcasting\n",
+                "Let's see broadcasting in action."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "matrix = torch.zeros(3, 3)\n",
+                "vector = torch.tensor([1, 2, 3])\n",
+                "\n",
+                "# The vector [1,2,3] is broadcasted across all rows of the matrix!\n",
+                "result = matrix + vector\n",
+                "print(\"Broadcast Result:\\n\", result)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 11. Practice Exercise 1: Matrix Multiplication Shape Prediction\n",
+                "Predict the shape of the output before running the code.\n",
+                "`A` is shape `[3, 2]`.\n",
+                "`B` is shape `[2, 5]`.\n",
+                "What is the shape of `A @ B`?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Test your prediction\n",
+                "A = torch.rand(3, 2)\n",
+                "B = torch.rand(2, 5)\n",
+                "C = A @ B\n",
+                "print(C.shape)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 13. Debugging Challenge\n",
+                "Why does this matrix multiplication fail?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "tensor_1 = torch.rand(3, 2)\n",
+                "tensor_2 = torch.rand(3, 2)\n",
+                "\n",
+                "# result = torch.matmul(tensor_1, tensor_2) # Uncomment to see error"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Solution:** In matrix multiplication, the inner dimensions must match! `[3, 2] @ [3, 2]` is invalid because `2 != 3`. \n",
+                "Fix it by transposing the second tensor: `tensor_1 @ tensor_2.T` which changes the operation to `[3, 2] @ [2, 3] = [3, 3]`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 17. Interview Questions\n",
+                "1. **What is Broadcasting in PyTorch?**\n",
+                "   *Answer*: It is how PyTorch handles operations between tensors of different shapes. The smaller tensor is virtually expanded to match the larger tensor without actually copying data.\n",
+                "2. **Explain `argmax`.**\n",
+                "   *Answer*: It returns the *index* of the maximum value in a tensor, rather than the value itself. It is commonly used to find the predicted class in classification problems."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 19. Day Summary\n",
+                "- Use `+`, `-`, `*`, `/` for element-wise arithmetic.\n",
+                "- Use `@` or `torch.matmul` for matrix multiplication (inner dimensions must match).\n",
+                "- Use `dim` argument in reduction operations (`sum`, `mean`, `max`) to collapse a specific dimension.\n",
+                "- Broadcasting allows arithmetic on tensors of different, but compatible shapes."
+            ]
+        }
+    ],
+    "metadata": {},
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open("Day_03_Tensor_Operations.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=2)
+
+print("Created Day_03_Tensor_Operations.ipynb")

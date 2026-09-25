@@ -1,0 +1,209 @@
+import json
+
+notebook = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Day 19 \u2014 GPU Acceleration & CUDA\n",
+                "\n",
+                "## 1. Learning Objectives\n",
+                "- Understand why GPUs are used in Deep Learning.\n",
+                "- Learn how to check for GPU availability (`torch.cuda.is_available()`).\n",
+                "- Define a device-agnostic setup.\n",
+                "- Move Tensors and Models to the GPU using `.to(device)`.\n",
+                "- Diagnose and fix Device Mismatch errors."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 2. Prerequisites\n",
+                "- Tensors (Day 2)\n",
+                "- Training Loops (Day 12)"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch\n",
+                "import torch.nn as nn"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 3. Concept Explanation\n",
+                "CPUs are like a few highly intelligent professors. They can solve very complex sequential tasks. GPUs are like thousands of high school students. They aren't as smart individually, but they can perform thousands of simple math problems (like Matrix Multiplication) at the exact same time.\n",
+                "\n",
+                "Deep Learning is almost entirely Matrix Multiplication. Therefore, running a Neural Network on a GPU can be 10x to 100x faster than running it on a CPU."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 4. Device Agnostic Code\n",
+                "You want your code to run on a GPU if one is available, but fallback to a CPU if it's not (e.g., when sharing code with a friend who doesn't have a gaming PC). We do this using `torch.device`."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# 8. Simple Example: Device Setup\n",
+                "device = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n",
+                "print(f\"Using device: {device}\")"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 9. Moving Data and Models\n",
+                "By default, all tensors and models are created on the CPU memory. To utilize the GPU, you must explicitly copy them over using `.to(device)`."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# 1. Moving a Tensor\n",
+                "x = torch.randn(5, 5) # Created on CPU\n",
+                "x = x.to(device)      # Copied to GPU (if available)\n",
+                "print(\"Tensor device:\", x.device)\n",
+                "\n",
+                "# 2. Moving a Model\n",
+                "model = nn.Linear(5, 2)\n",
+                "model = model.to(device)\n",
+                "\n",
+                "# Check where the model's weights live\n",
+                "print(\"Model weights device:\", next(model.parameters()).device)"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 10. Experiment: The Golden Rule of Devices\n",
+                "**PyTorch Golden Rule**: Tensors cannot interact if they are on different devices. You cannot multiply a CPU tensor by a GPU tensor."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "cpu_tensor = torch.ones(2, 2) # Stays on CPU\n",
+                "gpu_tensor = torch.ones(2, 2).to(device) # Moves to GPU\n",
+                "\n",
+                "# Only runs if you actually have a GPU, otherwise they are both on CPU\n",
+                "if torch.cuda.is_available():\n",
+                "    try:\n",
+                "        result = cpu_tensor + gpu_tensor\n",
+                "    except RuntimeError as e:\n",
+                "        print(f\"Error Caught!\\n{e}\")"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 11. Practice Exercise 1: Update the Training Loop\n",
+                "Look at this pseudo-code training loop. Where exactly do you need to add `.to(device)` to make it run on a GPU?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# model = MyModel()\n",
+                "# for images, labels in dataloader:\n",
+                "#     preds = model(images)\n",
+                "#     loss = criterion(preds, labels)\n",
+                "#     ... backward and step ..."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# SOLUTION\n",
+                "# 1. Model must go to device BEFORE the loop (or before setting up the optimizer)\n",
+                "# model = MyModel().to(device)\n",
+                "# \n",
+                "# for images, labels in dataloader:\n",
+                "#     # 2. Data must go to device AS SOON AS it comes out of the dataloader\n",
+                "#     images = images.to(device)\n",
+                "#     labels = labels.to(device)\n",
+                "#     \n",
+                "#     preds = model(images)\n",
+                "#     loss = criterion(preds, labels)\n",
+                "#     ... backward and step ..."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 13. Debugging Challenge\n",
+                "You trained a model on the GPU. You want to plot the predictions using `matplotlib` (which runs on the CPU and requires NumPy arrays).\n",
+                "Why does `plt.plot(predictions.numpy())` crash, and how do you fix it?"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Solution:** NumPy cannot read memory that lives on the GPU. You must first copy the tensor back to the CPU memory using `.cpu()`, and since it's likely attached to the computational graph, you also need to detach it. \n",
+                "\n",
+                "The fix: `plt.plot(predictions.detach().cpu().numpy())`"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 17. Interview Questions\n",
+                "1. **What happens if you initialize your Optimizer BEFORE moving your model to the GPU?**\n",
+                "   *Answer*: The optimizer will track the CPU parameters. When you move the model to the GPU, PyTorch creates a *copy* of the parameters on the GPU. The optimizer will update the old CPU parameters, and your GPU model will never learn. ALWAYS do `model = model.to(device)` BEFORE `optim.Adam(model.parameters())`.\n",
+                "2. **What does `torch.cuda.empty_cache()` do?**\n",
+                "   *Answer*: It releases all unoccupied cached memory currently held by the caching allocator so that it can be used in other GPU applications. However, it does NOT free memory occupied by active tensors. You usually don't need to call this manually."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 19. Day Summary\n",
+                "- Write device-agnostic code using `torch.device('cuda' if torch.cuda.is_available() else 'cpu')`.\n",
+                "- Send models to the device `model.to(device)` *before* initializing the optimizer.\n",
+                "- Send data batches to the device `x.to(device)` immediately inside the training loop.\n",
+                "- NumPy requires data to be on the CPU: `.detach().cpu().numpy()`."
+            ]
+        }
+    ],
+    "metadata": {},
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open("Day_19_GPU_CUDA.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=2)
+
+print("Created Day_19_GPU_CUDA.ipynb")

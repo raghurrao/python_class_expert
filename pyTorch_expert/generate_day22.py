@@ -1,0 +1,231 @@
+import json
+
+notebook = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Day 22 \u2014 CNN Fundamentals\n",
+                "\n",
+                "## 1. Learning Objectives\n",
+                "- Understand the problem with Linear Layers for images.\n",
+                "- Understand Convolutions, Kernels (Filters), and Feature Maps.\n",
+                "- Learn how Stride and Padding affect spatial dimensions.\n",
+                "- Understand Pooling (Max Pooling).\n",
+                "- Build visual and mathematical intuition for CNNs."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 2. Prerequisites\n",
+                "- Tensor Shapes (Day 4: `[Batch, Channels, Height, Width]`)\n",
+                "- Experience flattening images (Day 21)."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch\n",
+                "import torch.nn.functional as F\n",
+                "import matplotlib.pyplot as plt\n",
+                "import numpy as np"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 3. Concept Explanation: The Problem with `nn.Linear`\n",
+                "If you have a 1000x1000 pixel image, it has 1,000,000 pixels. A single `nn.Linear(1000000, 1024)` layer requires **1 BILLION weights**. It will instantly run out of memory.\n",
+                "Worse, if you flatten a 2D image into a 1D vector, the network doesn't know that a pixel at index `0` is physically right next to the pixel at index `1000`. Spatial structure is destroyed.\n",
+                "\n",
+                "**Convolutional Neural Networks (CNNs)** solve this by sliding a small magnifying glass (a **Kernel** or **Filter**) over the image to detect local patterns (edges, corners, textures)."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 5. Intuition & Visual Model\n",
+                "- **Kernel / Filter**: A small matrix (usually 3x3) of weights.\n",
+                "- **Convolution**: The process of sliding this 3x3 kernel across the image, doing element-wise multiplication, and summing the result into a single pixel on a new image.\n",
+                "- **Feature Map**: The new \"image\" created by the convolution. It acts as a map showing *where* the kernel found its specific pattern."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 6. Mathematical Foundation: The Convolution Operation\n",
+                "Let's simulate a convolution operation manually without `nn.Conv2d`."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# 8. Simple Example\n",
+                "# Let's create a 5x5 \"Image\" (e.g., a vertical line of 1s in the middle)\n",
+                "image = torch.tensor([\n",
+                "    [0, 0, 1, 0, 0],\n",
+                "    [0, 0, 1, 0, 0],\n",
+                "    [0, 0, 1, 0, 0],\n",
+                "    [0, 0, 1, 0, 0],\n",
+                "    [0, 0, 1, 0, 0]\n",
+                "], dtype=torch.float32)\n",
+                "\n",
+                "# Let's create a 3x3 \"Vertical Edge Detector\" Kernel\n",
+                "kernel = torch.tensor([\n",
+                "    [-1, 2, -1],\n",
+                "    [-1, 2, -1],\n",
+                "    [-1, 2, -1]\n",
+                "], dtype=torch.float32)\n",
+                "\n",
+                "# PyTorch's functional conv2d requires shape [Batch, Channels, Height, Width]\n",
+                "img_tensor = image.view(1, 1, 5, 5)\n",
+                "kernel_tensor = kernel.view(1, 1, 3, 3)\n",
+                "\n",
+                "# Perform the Convolution\n",
+                "feature_map = F.conv2d(img_tensor, kernel_tensor)\n",
+                "\n",
+                "print(\"Original Image (5x5):\\n\", image)\n",
+                "print(\"\\nKernel (3x3):\\n\", kernel)\n",
+                "print(\"\\nFeature Map (3x3) - Notice how it highlights the middle!\\n\", feature_map.squeeze())"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 9. Code Walkthrough: Padding and Stride\n",
+                "Notice that our 5x5 image became a 3x3 feature map. Why? Because a 3x3 kernel can only fit inside a 5x5 grid 3 times horizontally and 3 times vertically. \n",
+                "\n",
+                "- **Padding**: Adding zeros around the border of the original image so the kernel can slide over the edges. This preserves the original spatial dimensions.\n",
+                "- **Stride**: How many pixels the kernel shifts at a time. Default is 1. A stride of 2 will skip every other pixel, effectively halving the image size."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# Apply padding=1 (adds a 1-pixel border of zeros)\n",
+                "padded_feat_map = F.conv2d(img_tensor, kernel_tensor, padding=1)\n",
+                "print(\"Shape with Padding=1:\", padded_feat_map.shape) # Stays 5x5!\n",
+                "\n",
+                "# Apply stride=2 (jumps by 2 pixels)\n",
+                "strided_feat_map = F.conv2d(img_tensor, kernel_tensor, padding=1, stride=2)\n",
+                "print(\"Shape with Stride=2:\", strided_feat_map.shape) # Shrinks to 3x3!"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 10. Pooling (Max Pooling)\n",
+                "Pooling is a way to aggressively downsample an image. It takes a window (e.g., 2x2) and keeps only the maximum value in that window. \n",
+                "- It drastically reduces parameters.\n",
+                "- It provides **translation invariance** (if an eye is slightly to the left, max pooling still detects it)."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "big_image = torch.randn(1, 1, 4, 4)\n",
+                "pooled = F.max_pool2d(big_image, kernel_size=2, stride=2)\n",
+                "\n",
+                "print(\"Original Shape:\", big_image.shape)\n",
+                "print(\"Pooled Shape:\", pooled.shape) # Cut exactly in half!"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 11. Practice Exercise 1: Dimension Math\n",
+                "You have an input image of shape `[1, 3, 32, 32]`. \n",
+                "You apply a `3x3` kernel, with `padding=0` and `stride=1`. \n",
+                "What is the Height and Width of the resulting feature map?"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Solution:**\n",
+                "Formula: $Output = \\lfloor \\frac{Input - Kernel + 2 \\times Padding}{Stride} \\rfloor + 1$\n",
+                "Output = (32 - 3 + 0) / 1 + 1 = 29 + 1 = 30.\n",
+                "The result is `[1, C, 30, 30]`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 13. Debugging Challenge\n",
+                "Why does the following Max Pooling operation crash?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "my_image = torch.randn(28, 28) # A 28x28 grayscale image\n",
+                "# result = F.max_pool2d(my_image, kernel_size=2, stride=2) # Uncomment to see error"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Solution:** `F.max_pool2d` and `F.conv2d` strictly require 4-dimensional tensors: `[Batch, Channels, Height, Width]`. `my_image` is only 2D. \n",
+                "Fix: `my_image = my_image.view(1, 1, 28, 28)`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 17. Interview Questions\n",
+                "1. **Why do we use Convolutional layers instead of Linear layers for images?**\n",
+                "   *Answer*: CNNs have two massive advantages: \n",
+                "   1) **Parameter Sharing**: A 3x3 filter uses the exact same 9 weights across the entire image, drastically reducing the number of parameters.\n",
+                "   2) **Local Connectivity**: They preserve the spatial relationship of pixels, whereas flattening destroys it.\n",
+                "2. **If you want the output spatial dimensions to exactly match the input spatial dimensions when using a 3x3 kernel with stride 1, what padding should you use?**\n",
+                "   *Answer*: `padding=1`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 19. Day Summary\n",
+                "- Convolutions slide a learned kernel (filter) across an image to detect patterns.\n",
+                "- Without padding, convolutions shrink the image.\n",
+                "- Max Pooling is used to aggressively downsample the image, reducing computation and adding translation invariance."
+            ]
+        }
+    ],
+    "metadata": {},
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open("Day_22_CNN_Fundamentals.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=2)
+
+print("Created Day_22_CNN_Fundamentals.ipynb")

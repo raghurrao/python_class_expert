@@ -1,0 +1,236 @@
+import json
+
+notebook = {
+    "cells": [
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "# Day 20 \u2014 Debugging PyTorch Masterclass\n",
+                "\n",
+                "## 1. Learning Objectives\n",
+                "- Develop a systematic approach to debugging PyTorch errors.\n",
+                "- Diagnose and fix Shape and Dimensionality errors.\n",
+                "- Diagnose and fix Device and Dtype mismatches.\n",
+                "- Troubleshoot silent logical errors (like NaN loss and exploding gradients)."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 2. Prerequisites\n",
+                "- Completion of Days 1 through 19."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch\n",
+                "import torch.nn as nn\n",
+                "import torch.optim as optim"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 3. Concept Explanation\n",
+                "You spend 20% of your time writing PyTorch code and 80% of your time debugging it.\n",
+                "The 3 absolute most common errors you will encounter are:\n",
+                "1. **Shape Mismatch**: Trying to matrix multiply `[32, 10]` by `[64, 20]`.\n",
+                "2. **Device Mismatch**: \"Expected all tensors to be on the same device, but found at least two devices, cuda:0 and cpu!\"\n",
+                "3. **Dtype Mismatch**: Trying to pass a `Long` (Integer) tensor into a Linear layer that expects `Float`.\n",
+                "\n",
+                "Let's break them."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## Bug 1: The Shape Mismatch\n",
+                "Look at the code below. Run it in your head. Why will it crash?"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "class BadShapeModel(nn.Module):\n",
+                "    def __init__(self):\n",
+                "        super().__init__()\n",
+                "        self.fc1 = nn.Linear(10, 32)\n",
+                "        self.fc2 = nn.Linear(64, 1) # <--- BUG IS HERE\n",
+                "        \n",
+                "    def forward(self, x):\n",
+                "        x = torch.relu(self.fc1(x))\n",
+                "        x = self.fc2(x)\n",
+                "        return x\n",
+                "\n",
+                "# dummy_x = torch.randn(5, 10)\n",
+                "# model = BadShapeModel()\n",
+                "# model(dummy_x) # Will throw RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Fix**: The output of `fc1` is 32 features. The input of `fc2` expects 64 features. They must match! Change to `nn.Linear(32, 1)`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## Bug 2: The Dtype Mismatch\n",
+                "Neural network weights are initialized as 32-bit floats (`torch.float32`). If you feed them integers, they crash."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "linear = nn.Linear(2, 1)\n",
+                "int_data = torch.tensor([[1, 2], [3, 4]]) # Defaults to torch.int64\n",
+                "\n",
+                "# linear(int_data) # Will throw RuntimeError: expected scalar type Float but found Long"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Fix**: Cast your data to float before passing to the model: `linear(int_data.float())`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## Bug 3: The Target Shape Error (Broadcasting Disaster)\n",
+                "This is a silent bug. It won't crash, but your loss won't go down properly."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "pred = torch.randn(32, 1) # Model outputs shape [Batch, 1]\n",
+                "target = torch.randn(32)  # Labels are shape [Batch]\n",
+                "\n",
+                "criterion = nn.MSELoss()\n",
+                "loss = criterion(pred, target)\n",
+                "print(\"Nonsense Loss due to broadcasting:\", loss.item())"
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Explanation**: Because `pred` is `[32, 1]` and `target` is `[32]`, PyTorch broadcasts `target` to `[32, 32]`, calculates a massive 32x32 MSE matrix, and averages it. The math is valid, but completely wrong for your training task.\n",
+                "**Fix**: Ensure shapes match exactly! Use `target = target.unsqueeze(1)` or `target.view(-1, 1)` to make it `[32, 1]`."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## Bug 4: Exploding Gradients / NaN Loss\n",
+                "You are training a model, and suddenly your loss prints `NaN` (Not a Number)."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "**Causes & Fixes**:\n",
+                "1. **Learning Rate too high**: The optimizer took a massive step into infinity. Fix: Lower `lr`.\n",
+                "2. **Unnormalized Data**: A feature has a value of 50,000, causing massive outputs. Fix: Standardize inputs.\n",
+                "3. **Bad Loss Function usage**: Passing probabilities to `BCEWithLogitsLoss` instead of raw logits, or passing negative numbers to a `log` function."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 11. Practice Exercise 1: The Ultimate Debugging Test\n",
+                "The code below has 3 bugs. It is trying to do binary classification. Fix the code so it runs without errors."
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "import torch.nn.functional as F\n",
+                "\n",
+                "class BrokenNet(nn.Module):\n",
+                "    def __init__(self):\n",
+                "        # Bug 1 here?\n",
+                "        self.fc = nn.Linear(5, 1)\n",
+                "        \n",
+                "    def forward(self, x):\n",
+                "        return self.fc(x)\n",
+                "\n",
+                "net = BrokenNet()\n",
+                "optimizer = optim.Adam(net.parameters(), lr=0.01)\n",
+                "criterion = nn.BCEWithLogitsLoss()\n",
+                "\n",
+                "data = torch.randn(10, 5)\n",
+                "labels = torch.randint(0, 2, (10,)) # Bug 2 here?\n",
+                "\n",
+                "for i in range(3):\n",
+                "    preds = net(data)\n",
+                "    # loss = criterion(preds, labels) # Uncomment. Bug 3 here?\n",
+                "    # loss.backward()\n",
+                "    # optimizer.step()\n",
+                "    # optimizer.zero_grad()"
+            ]
+        },
+        {
+            "cell_type": "code",
+            "execution_count": None,
+            "metadata": {},
+            "outputs": [],
+            "source": [
+                "# SOLUTION\n",
+                "# Bug 1: Missing super().__init__() in the BrokenNet class.\n",
+                "# Bug 2 & 3: labels is shape [10] (int64). preds is shape [10, 1] (float32). \n",
+                "# Fix: labels = torch.randint(0, 2, (10, 1)).float()\n",
+                "# Then criterion(preds, labels) will work perfectly."
+            ]
+        },
+        {
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": [
+                "## 19. Day Summary\n",
+                "When your PyTorch code crashes, follow this checklist:\n",
+                "1. `print(tensor.shape)` everywhere. Ensure `mat1` inner matches `mat2` inner.\n",
+                "2. `print(tensor.dtype)`. Models want floats. `CrossEntropyLoss` targets want Longs (Ints). `BCE` targets want floats.\n",
+                "3. `print(tensor.device)`. Ensure model and data are on the same device.\n",
+                "4. Check for silent broadcasting errors in your Loss calculation (`[Batch, 1]` vs `[Batch]`)."
+            ]
+        }
+    ],
+    "metadata": {},
+    "nbformat": 4,
+    "nbformat_minor": 4
+}
+
+with open("Day_20_Debugging_PyTorch.ipynb", "w", encoding="utf-8") as f:
+    json.dump(notebook, f, indent=2)
+
+print("Created Day_20_Debugging_PyTorch.ipynb")

@@ -1,0 +1,155 @@
+import json
+
+def create_markdown_cell(source):
+    if isinstance(source, str):
+        source = [source]
+    return {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [s + "\n" if not s.endswith("\n") else s for s in source]
+    }
+
+def create_code_cell(source):
+    if isinstance(source, str):
+        source = [source]
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [s + "\n" if not s.endswith("\n") else s for s in source]
+    }
+
+day26_cells = [
+    create_markdown_cell("# PHASE 5 — ADVANCED WORKFLOWS & PRODUCTION"),
+    create_markdown_cell("# Day 26 — Cross Validation"),
+    
+    create_markdown_cell("## 1. Learning Objectives\nBy the end of this notebook, you will be able to:\n- Explain why `train_test_split` can be dangerous and misleading.\n- Understand the mechanics of **K-Fold Cross Validation**.\n- Use `cross_val_score` to rigorously evaluate a model's true performance.\n- Interpret the variance (standard deviation) of cross-validation scores to detect unstable models."),
+    
+    create_markdown_cell("## 2. Prerequisites\n- Day 3 (Train / Test Split).\n- Day 12 & 13 (Decision Trees & Random Forests)."),
+    
+    create_markdown_cell("## 3. Concept: The \"Luck of the Draw\" Problem\nSince Day 3, we have relied entirely on `train_test_split` to divide our data. We usually set `random_state=42` to ensure the split is the same every time.\n\nBut what if `random_state=42` happens to put all the \"easy\" rows into the test set? Your model will report an Accuracy of 95%. You deploy it to production, and it fails miserably. \nWhat if it puts all the \"hard\" outliers into the test set? The Accuracy reports 60%, and you throw away a perfectly good model.\n\nEvaluating a model based on a single random slice of data is gambling. It is highly susceptible to the \"Luck of the Draw\"."),
+    
+    create_markdown_cell("## 4. Concept: K-Fold Cross Validation\n**Cross Validation (CV)** mathematically eliminates this gamble.\nInstead of splitting the data once, **K-Fold CV** does the following:\n1. Cuts the entire dataset into $K$ equal-sized chunks (Folds). Let's say $K=5$.\n2. It trains the model on Folds 1, 2, 3, and 4. It tests on Fold 5. It saves the score.\n3. It throws the model away. It trains a brand new model on Folds 1, 2, 3, and 5. It tests on Fold 4. It saves the score.\n4. It repeats this until every single Fold has been used as the Test set exactly once.\n\nYou now have 5 scores. You calculate the **Mean** (the true performance) and the **Standard Deviation** (the stability/variance) of those scores."),
+    
+    create_markdown_cell("## 5. Scikit-learn API\n```python\nfrom sklearn.model_selection import cross_val_score\n# cv=5 means 5-Fold Cross Validation\nscores = cross_val_score(model, X, y, cv=5, scoring='accuracy')\n```"),
+    
+    create_markdown_cell("## 6. Simple Example: The Danger of train_test_split\nLet's generate a complex dataset. We will train a `DecisionTreeClassifier` and evaluate it using 5 different `random_state` values in `train_test_split`. Watch how wildly the accuracy fluctuates!"),
+    create_code_cell([
+        "import numpy as np",
+        "import pandas as pd",
+        "from sklearn.datasets import make_classification",
+        "from sklearn.model_selection import train_test_split",
+        "from sklearn.tree import DecisionTreeClassifier",
+        "from sklearn.metrics import accuracy_score",
+        "",
+        "# 1. Generate Dataset",
+        "X, y = make_classification(n_samples=500, n_features=10, n_informative=5, random_state=42)",
+        "",
+        "model = DecisionTreeClassifier(random_state=1)",
+        "",
+        "# 2. Loop through 5 different random seeds for train_test_split",
+        "print('Accuracies across different single splits:')",
+        "for seed in [10, 42, 99, 123, 777]:",
+        "    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)",
+        "    model.fit(X_train, y_train)",
+        "    acc = accuracy_score(y_test, model.predict(X_test))",
+        "    print(f'Seed {seed}: {acc * 100:.1f}%')"
+    ]),
+    
+    create_markdown_cell("## 7. Code Walkthrough\n- We ran the exact same Decision Tree on the exact same dataset 5 times.\n- The only thing that changed was which 20% of rows were randomly selected for the Test set.\n- The accuracy swung wildly from ~75% to ~90%. If you used Seed 99, you'd think your model was amazing. If you used Seed 10, you'd think it was terrible. This is unacceptable for production."),
+    
+    create_markdown_cell("## 8. Experiment: Using K-Fold CV\nLet's fix this using `cross_val_score(cv=5)`. This will automatically slice the data into 5 equal folds, train 5 separate models, and return the 5 scores."),
+    create_code_cell([
+        "from sklearn.model_selection import cross_val_score",
+        "",
+        "# 1. Run 5-Fold Cross Validation (Notice we pass the ENTIRE X and y, not X_train!)",
+        "cv_scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')",
+        "",
+        "print('The 5 individual Fold scores:')",
+        "print(np.round(cv_scores, 3))",
+        "",
+        "print('\\nThe True Evaluation:')",
+        "print(f'Mean Accuracy: {cv_scores.mean() * 100:.1f}%')",
+        "print(f'Standard Dev:  ±{cv_scores.std() * 100:.1f}%')"
+    ]),
+    create_markdown_cell("> This tells us the absolute truth: The model is actually an 82% accurate model, and its performance can swing up or down by about 3.5% depending on what data it sees. We now have total confidence in our evaluation."),
+    
+    create_markdown_cell("## 9. Prediction Exercise\nRead the following code, but **DO NOT RUN IT YET**."),
+    create_code_cell([
+        "from sklearn.ensemble import RandomForestClassifier",
+        "",
+        "rf_model = RandomForestClassifier(n_estimators=100, random_state=1)",
+        "rf_scores = cross_val_score(rf_model, X, y, cv=5, scoring='accuracy')"
+    ]),
+    create_markdown_cell("> **Question:** We know Random Forests average out the variance of single Decision Trees. What do you expect to happen to the `Mean Accuracy` and the `Standard Dev` when we run 5-Fold CV on the Random Forest compared to the single Tree?\n\n**Think before running the next cell!**"),
+    create_code_cell([
+        "print('Random Forest True Evaluation:')",
+        "print(f'Mean Accuracy: {rf_scores.mean() * 100:.1f}%')",
+        "print(f'Standard Dev:  ±{rf_scores.std() * 100:.1f}%')",
+        "print('\\nWhy? The Mean Accuracy went up drastically because Ensembles are mathematically superior.')",
+        "print('The Standard Dev went down drastically! The Random Forest is incredibly STABLE. It doesn\\'t care which data fold you test it on, it almost always scores ~92%.')"
+    ]),
+    
+    create_markdown_cell("## 10. Coding Exercise\nTry running a **10-Fold** Cross Validation on the `RandomForestClassifier`. \n(Change `cv=10`). \nPrint out the Mean and the Standard Deviation."),
+    create_code_cell([
+        "# YOUR CODE HERE",
+        "rf_10_scores = cross_val_score(rf_model, X, y, cv=10, scoring='accuracy')",
+        "print(f'10-Fold Mean Accuracy: {rf_10_scores.mean() * 100:.1f}%')",
+        "print(f'10-Fold Standard Dev:  ±{rf_10_scores.std() * 100:.1f}%')"
+    ]),
+    
+    create_markdown_cell("## 11. Debugging Challenge\nA data scientist builds a complex Pipeline with `StandardScaler` and `SVC(kernel='rbf')`. \nThey do `X_scaled = scaler.fit_transform(X)`, and then run `cross_val_score(model, X_scaled, y, cv=5)`. This is a massive mathematical error known as Data Leakage. Why?"),
+    create_code_cell([
+        "# Conceptual Bug",
+        "print('Error: Data Leakage in Cross Validation.')",
+        "print('Why? You scaled the ENTIRE dataset before slicing it into folds.')",
+        "print('The scaler looked at Fold 5 (the future test set) to calculate its Mean and Std. It then used that information to scale Fold 1, 2, 3, and 4.')",
+        "print('The training folds have technically \"seen\" the mathematical properties of the test fold! Your CV scores will be artificially inflated.')"
+    ]),
+    create_markdown_cell("> **Rule:** You must NEVER manually scale data before running `cross_val_score`. You must pass the **Pipeline** itself into `cross_val_score`. Scikit-learn is smart enough to properly run `.fit_transform()` only on the training folds, and `.transform()` on the test fold during every single iteration!"),
+    
+    create_markdown_cell("## 12. Model Evaluation (Tradeoffs)\n- **Why not use K-Fold CV for everything?** \nBecause it is incredibly slow. If you have a massive neural network that takes 5 hours to train, running `cv=5` will take 25 hours. \n- We use `train_test_split` during rapid prototyping when we just want a quick, dirty answer.\n- We use `cross_val_score` at the very end of the project to rigorously certify the model before putting it into Production."),
+    
+    create_markdown_cell("## 13. Real-World Example\n**Medical Diagnosis Models**: If you are building a model to detect lung cancer, and you get 95% accuracy using a single `train_test_split`, the FDA will laugh you out of the room. They will mandate 10-Fold Cross Validation. If your 10-Fold CV shows `Mean: 95%, Std: ± 15%`, your model will be rejected. A Std of 15% means the model is highly unstable and could arbitrarily drop to 80% accuracy depending on the hospital it is deployed in."),
+    
+    create_markdown_cell("## 14. Mini Project\nLet's do it the correct, leak-free way. Build a Pipeline containing `StandardScaler` and `SVC`. \nRun a 5-Fold Cross Validation on the Pipeline itself using the raw `X` and `y`. Print the Mean and Std!"),
+    create_code_cell([
+        "from sklearn.pipeline import Pipeline",
+        "from sklearn.preprocessing import StandardScaler",
+        "from sklearn.svm import SVC",
+        "",
+        "svm_pipe = Pipeline([",
+        "    ('scaler', StandardScaler()),",
+        "    ('svm', SVC(kernel='rbf', random_state=42))",
+        "])",
+        "",
+        "# Pass the PIPELINE into cross_val_score, along with RAW X and y",
+        "safe_cv_scores = cross_val_score(svm_pipe, X, y, cv=5, scoring='accuracy')",
+        "",
+        "print(f'Leak-Free SVM Pipeline Mean: {safe_cv_scores.mean() * 100:.1f}%')",
+        "print(f'Leak-Free SVM Pipeline Std:  ±{safe_cv_scores.std() * 100:.1f}%')"
+    ]),
+    
+    create_markdown_cell("## 15. Common Mistakes\n- **Scaling before CV**: The #1 cause of data leakage in advanced machine learning. Always put the Scaler in a Pipeline and pass the Pipeline to `cross_val_score`.\n- **Choosing K too large**: Setting `cv=100` (Leave-One-Out CV) is mathematically interesting but will cause the training time to explode.\n- **Only looking at the Mean**: Always look at the Standard Deviation. An unstable model is a dangerous model."),
+    
+    create_markdown_cell("## 16. Interview Questions\n- **Beginner**: Why is `train_test_split` alone considered risky for final evaluation? (Answer: Because it relies on a single random slice of data. It could get lucky or unlucky).\n- **Intermediate**: Explain exactly how 5-Fold Cross Validation works. (Answer: It splits the data into 5 chunks. It trains on 4 chunks and tests on the 5th. It repeats this 5 times so every chunk is the test set exactly once. It averages the 5 scores).\n- **Advanced**: How does using a Pipeline with `cross_val_score` prevent data leakage? (Answer: If you scale before CV, the scaler's math is influenced by the test folds. The Pipeline ensures the scaler only runs `.fit()` on the training folds inside each of the 5 iterations, perfectly simulating reality)."),
+    
+    create_markdown_cell("## 17. Knowledge Check\n- What function runs K-Fold Cross Validation? (`cross_val_score`)\n- If a CV array is `[0.90, 0.91, 0.89, 0.90]`, is this model stable? (Yes, the standard deviation is extremely low)"),
+    
+    create_markdown_cell("## 18. Summary\n- **train_test_split** is fast for prototyping, but subject to random luck.\n- **K-Fold Cross Validation** rigorously trains and tests the model on every single row of data.\n- We evaluate the **Mean** (true accuracy) and **Standard Deviation** (stability).\n- You must pass a **Pipeline** to `cross_val_score` to avoid scaling data leakage.\n- Random Forests are vastly more stable (lower Std) than single Decision Trees."),
+    
+    create_markdown_cell("## 19. Homework\nLoad the `load_wine` dataset. Run a 5-Fold Cross validation on a raw `LogisticRegression()` model. \nThen, build a Pipeline with `StandardScaler` and `LogisticRegression()`, and run 5-Fold CV on the Pipeline. \nCompare the Mean Accuracies. You should see a massive improvement when the scaling is properly executed within the folds!")
+]
+
+# Read existing notebook and update cells
+filename = "Day_26_Cross_Validation.ipynb"
+with open(filename, 'r', encoding='utf-8') as f:
+    notebook = json.load(f)
+
+notebook['cells'] = day26_cells
+
+with open(filename, 'w', encoding='utf-8') as f:
+    json.dump(notebook, f, indent=1)
+
+print(f"Updated {filename} successfully!")

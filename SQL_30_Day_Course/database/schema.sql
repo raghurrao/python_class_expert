@@ -1,0 +1,17 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE departments(department_id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, building TEXT, budget REAL CHECK(budget IS NULL OR budget>=0));
+CREATE TABLE students(student_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, enrollment_date TEXT NOT NULL, department_id INTEGER REFERENCES departments(department_id), advisor_id INTEGER);
+CREATE TABLE instructors(instructor_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, department_id INTEGER NOT NULL REFERENCES departments(department_id), hire_date TEXT NOT NULL, salary REAL CHECK(salary>0));
+CREATE TABLE courses(course_id INTEGER PRIMARY KEY, course_code TEXT NOT NULL UNIQUE, title TEXT NOT NULL, department_id INTEGER NOT NULL REFERENCES departments(department_id), credits INTEGER NOT NULL CHECK(credits BETWEEN 1 AND 6), level INTEGER NOT NULL CHECK(level BETWEEN 100 AND 900));
+CREATE TABLE enrollments(enrollment_id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL REFERENCES students(student_id), course_id INTEGER NOT NULL REFERENCES courses(course_id), term TEXT NOT NULL, grade TEXT CHECK(grade IS NULL OR grade IN ('A','B','C','D','F','W')), enrolled_on TEXT NOT NULL, UNIQUE(student_id,course_id,term));
+CREATE TABLE teaches(instructor_id INTEGER NOT NULL REFERENCES instructors(instructor_id), course_id INTEGER NOT NULL REFERENCES courses(course_id), term TEXT NOT NULL, section TEXT NOT NULL DEFAULT 'A', PRIMARY KEY(instructor_id,course_id,term,section));
+CREATE TABLE customers(customer_id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE, city TEXT, joined_on TEXT NOT NULL, segment TEXT NOT NULL);
+CREATE TABLE products(product_id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL, unit_price REAL NOT NULL CHECK(unit_price>=0), active INTEGER NOT NULL DEFAULT 1 CHECK(active IN(0,1)));
+CREATE TABLE orders(order_id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES customers(customer_id), order_date TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN('placed','shipped','delivered','cancelled')));
+CREATE TABLE order_items(order_item_id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(order_id), product_id INTEGER NOT NULL REFERENCES products(product_id), quantity INTEGER NOT NULL CHECK(quantity>0), unit_price REAL NOT NULL CHECK(unit_price>=0));
+CREATE TABLE employees(employee_id INTEGER PRIMARY KEY, name TEXT NOT NULL, manager_id INTEGER REFERENCES employees(employee_id), department TEXT NOT NULL, hired_on TEXT NOT NULL);
+CREATE TABLE payments(payment_id INTEGER PRIMARY KEY, order_id INTEGER NOT NULL REFERENCES orders(order_id), paid_on TEXT, amount REAL NOT NULL CHECK(amount>=0), method TEXT NOT NULL, status TEXT NOT NULL);
+CREATE TABLE grade_audit(audit_id INTEGER PRIMARY KEY, enrollment_id INTEGER NOT NULL, old_grade TEXT, new_grade TEXT, changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX idx_enrollments_student ON enrollments(student_id);
+CREATE INDEX idx_enrollments_course_term ON enrollments(course_id,term);
+CREATE INDEX idx_orders_customer_date ON orders(customer_id,order_date);
